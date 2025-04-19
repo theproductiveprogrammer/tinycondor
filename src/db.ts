@@ -19,9 +19,9 @@ const CondorErrSchema = z.object({
 	record: z.any().optional(),
 	err: z.any().optional(),
 });
-type CondorErr = z.infer<typeof CondorErrSchema>;
+export type CondorErr = z.infer<typeof CondorErrSchema>;
 
-type CondorErrHandler = (err: CondorErr) => void;
+export type CondorErrHandler = (err: CondorErr) => void;
 
 export function clearCache() {
 	CACHE.clear();

@@ -26,8 +26,8 @@ declare const CondorErrSchema: z.ZodObject<{
     record?: any;
     err?: any;
 }>;
-type CondorErr = z.infer<typeof CondorErrSchema>;
-type CondorErrHandler = (err: CondorErr) => void;
+export type CondorErr = z.infer<typeof CondorErrSchema>;
+export type CondorErrHandler = (err: CondorErr) => void;
 export declare function clearCache(): void;
 export declare function create(initialRecords: CondorRec[], dbfile: string, onErrors: CondorErrHandler): Promise<CondorRec[] | null>;
 export declare function load(dbfile: string, onErrors: CondorErrHandler): Promise<CondorRec[] | null>;
