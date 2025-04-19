@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.clearCache = clearCache;
 exports.create = create;
 exports.load = load;
 exports.load_ = load_;
@@ -21,6 +22,9 @@ const CondorErrSchema = zod_1.z.object({
     record: zod_1.z.any().optional(),
     err: zod_1.z.any().optional(),
 });
+function clearCache() {
+    CACHE.clear();
+}
 async function create(initialRecords, dbfile, onErrors) {
     return new Promise((resolve) => {
         (0, node_fs_1.open)(dbfile, "wx", (err, fd) => {

@@ -11,7 +11,7 @@ const CondorRecSchema = z
 		tm: z.number(),
 	})
 	.catchall(z.any());
-type CondorRec = z.infer<typeof CondorRecSchema>;
+export type CondorRec = z.infer<typeof CondorRecSchema>;
 
 const CondorErrSchema = z.object({
 	message: z.string(),

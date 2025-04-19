@@ -9,7 +9,7 @@ declare const CondorRecSchema: z.ZodObject<{
     id: z.ZodString;
     tm: z.ZodNumber;
 }, z.ZodAny, "strip">>;
-type CondorRec = z.infer<typeof CondorRecSchema>;
+export type CondorRec = z.infer<typeof CondorRecSchema>;
 declare const CondorErrSchema: z.ZodObject<{
     message: z.ZodString;
     code: z.ZodOptional<z.ZodString>;
@@ -28,6 +28,7 @@ declare const CondorErrSchema: z.ZodObject<{
 }>;
 type CondorErr = z.infer<typeof CondorErrSchema>;
 type CondorErrHandler = (err: CondorErr) => void;
+export declare function clearCache(): void;
 export declare function create(initialRecords: CondorRec[], dbfile: string, onErrors: CondorErrHandler): Promise<CondorRec[] | null>;
 export declare function load(dbfile: string, onErrors: CondorErrHandler): Promise<CondorRec[] | null>;
 export declare function load_(dbfile: string, onErrors: CondorErrHandler): Promise<Map<string, CondorRec> | null>;
