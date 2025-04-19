@@ -6,13 +6,18 @@
 	"main": "dist/db.js",
 	"types": "dist/db.d.ts",
 	"scripts": {
-		"build": "tsc"
+		"build": "tsc",
+		"test": "vitest"
 	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/theproductiveprogrammer/tinycondor.git"
 	},
-	"keywords": ["database", "json", "embedded"],
+	"keywords": [
+		"database",
+		"json",
+		"embedded"
+	],
 	"author": "charles.lobo@gmail.com",
 	"license": "ISC",
 	"bugs": {
@@ -23,7 +28,10 @@
 		"zod": "^3.24.3"
 	},
 	"devDependencies": {
+		"@types/mock-fs": "^4.13.4",
+		"@types/node": "^22.14.1",
+		"mock-fs": "^5.5.0",
 		"typescript": "^5.8.3",
-		"@types/node": "^22.14.1"
+		"vitest": "^3.1.1"
 	}
 }
