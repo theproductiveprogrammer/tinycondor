@@ -1,6 +1,6 @@
 {
 	"name": "tinycondor",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "a tiny but useful record based db",
 	"type": "module",
 	"main": "dist/db.js",
