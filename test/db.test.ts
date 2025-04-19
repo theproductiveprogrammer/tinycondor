@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "fs/promises";
 import mockFs from "mock-fs";
 
-import { create, load, save } from "../src/db";
+import { clearCache, create, load, save } from "../src/db";
 
 const dbFile = "testdb.json";
 const testRecords = [
@@ -18,6 +18,7 @@ describe("Tiny Condor", () => {
 	let onErrors: ReturnType<typeof vi.fn>;
 
 	beforeEach(() => {
+		clearCache();
 		mockFs({});
 		onErrors = vi.fn();
 	});
@@ -33,7 +34,7 @@ describe("Tiny Condor", () => {
 	});
 
 	it("fails to create if DB already exists", async () => {
-		await fs.writeFile(dbFile, "[]");
+		await fs.writeFile(dbFile, "created");
 		const result = await create(testRecords, dbFile, onErrors);
 		expect(result).toBeNull();
 		expect(onErrors).toHaveBeenCalledWith(
@@ -63,6 +64,7 @@ describe("Tiny Condor", () => {
 	});
 
 	it("returns null and calls onErrors if save fails (e.g., bad record)", async () => {
+		await create(testRecords, dbFile, onErrors);
 		const invalidRecord = [{ name: "Missing ID" }]; // no 'id' field
 		await save(invalidRecord as any, dbFile, onErrors);
 		expect(onErrors).toHaveBeenCalledWith(
