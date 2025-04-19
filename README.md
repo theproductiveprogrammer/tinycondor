@@ -8,14 +8,19 @@ Ever wanted a quick and easy way to store data in your app directly as JSON reco
 
 You can save any type of data. The only requirement is the record must be identified by an `id` field.
 
-A helper function `genDbId(type: string) : string` can help generate a new id.
+```ts
+type CondorRec = {
+    id: string;
+    tm?: number;
+};
+```
 
 The interface is also simple:
 
 ```js
-const data = await create(initialRecords, dbfile, onErrors);
-const data = await load(dbfile, onErrors);
-const data = await save(recordArray, dbfile, onErrors);
+const data : (CondorRec[] | null) = await create(initialRecords, dbfile, onErrors);
+const data : (CondorRec[] | null) = await load(dbfile, onErrors);
+const data : (CondorRec[] | null) = await save(recordArray, dbfile, onErrors);
 ```
 
 The `onErrors` callback receives database errors on loading/saving records:
