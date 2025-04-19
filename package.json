@@ -3,19 +3,16 @@
 	"version": "1.0.0",
 	"description": "a tiny but useful record based db",
 	"type": "module",
-	"main": "src/index.ts",
+	"main": "dist/db.js",
+	"types": "dist/db.d.ts",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"build": "tsc"
 	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/theproductiveprogrammer/tinycondor.git"
 	},
-	"keywords": [
-		"database",
-		"json",
-		"embedded"
-	],
+	"keywords": ["database", "json", "embedded"],
 	"author": "charles.lobo@gmail.com",
 	"license": "ISC",
 	"bugs": {
@@ -23,6 +20,10 @@
 	},
 	"homepage": "https://github.com/theproductiveprogrammer/tinycondor#readme",
 	"dependencies": {
-		"typescript": "^5.8.3"
+		"zod": "^3.24.3"
+	},
+	"devDependencies": {
+		"typescript": "^5.8.3",
+		"@types/node": "^22.14.1"
 	}
 }

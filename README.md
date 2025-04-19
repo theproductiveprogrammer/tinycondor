@@ -13,7 +13,21 @@ A helper function `genDbId(type: string) : string` can help generate a new id.
 The interface is also simple:
 
 ```js
-const err = create(initialRecords, dbfile); // {code:'EEXISTS'} if already exists, null if successful, or other errors
-const data = load(dbfile);
-const updated = save(recordArray, dbfile);
+const data = await create(initialRecords, dbfile, onErrors);
+const data = await load(dbfile, onErrors);
+const data = await save(recordArray, dbfile, onErrors);
+```
+
+The `onErrors` callback receives database errors on loading/saving records:
+
+```js
+const onErrorsHandler = ({ message, code, record }) => {
+    // ALWAYS AVAILABLE
+    //  message -- error message useful for logging
+    //
+    // OPTIONAL
+    //  code -- EEXIST if trying to create an already existing db
+    //  record -- record which failed to be loaded/saved
+    //  err -- error object if thrown with stack etc
+};
 ```
