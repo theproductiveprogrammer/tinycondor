@@ -21,6 +21,7 @@ The interface is also simple:
 const data : (CondorRec[] | null) = await create(initialRecords, dbfile, onErrors);
 const data : (CondorRec[] | null) = await load(dbfile, onErrors);
 const data : (CondorRec[] | null) = await save(recordArray, dbfile, onErrors);
+clearCache(dbfile); // to free up memory
 ```
 
 The `onErrors` callback receives database errors on loading/saving records:

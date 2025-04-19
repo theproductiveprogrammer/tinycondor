@@ -23,6 +23,10 @@ type CondorErr = z.infer<typeof CondorErrSchema>;
 
 type CondorErrHandler = (err: CondorErr) => void;
 
+export function clearCache() {
+	CACHE.clear();
+}
+
 export async function create(
 	initialRecords: CondorRec[],
 	dbfile: string,
