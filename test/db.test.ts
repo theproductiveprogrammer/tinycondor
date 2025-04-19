@@ -13,6 +13,15 @@ const updatedRecords = [
 	{ id: "1", tm: 300, val: 2 },
 	{ id: "2", tm: 400, val: 2 },
 ];
+const updatedRecords2 = [
+	{ id: "2", tm: 300, val: 3 },
+	{ id: "3", tm: 400, val: 3 },
+];
+const result2 = [
+	{ id: "1", tm: 300, val: 2 },
+	{ id: "2", tm: 400, val: 2 },
+	{ id: "3", tm: 400, val: 3 },
+];
 
 describe("Tiny Condor", () => {
 	let onErrors: ReturnType<typeof vi.fn>;
@@ -73,5 +82,12 @@ describe("Tiny Condor", () => {
 				record: invalidRecord[0],
 			})
 		);
+	});
+
+	it("use cached records", async () => {
+		await create(testRecords, dbFile, onErrors);
+		await save(updatedRecords as any, dbFile, onErrors);
+		const result = await save(updatedRecords2 as any, dbFile, onErrors);
+		expect(result).toEqual(result2);
 	});
 });
