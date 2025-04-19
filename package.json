@@ -11,11 +11,18 @@
 		"type": "git",
 		"url": "git+https://github.com/theproductiveprogrammer/tinycondor.git"
 	},
-	"keywords": ["database", "json", "embedded"],
+	"keywords": [
+		"database",
+		"json",
+		"embedded"
+	],
 	"author": "charles.lobo@gmail.com",
 	"license": "ISC",
 	"bugs": {
 		"url": "https://github.com/theproductiveprogrammer/tinycondor/issues"
 	},
-	"homepage": "https://github.com/theproductiveprogrammer/tinycondor#readme"
+	"homepage": "https://github.com/theproductiveprogrammer/tinycondor#readme",
+	"dependencies": {
+		"typescript": "^5.8.3"
+	}
 }
