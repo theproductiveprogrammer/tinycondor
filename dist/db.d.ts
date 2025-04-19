@@ -1,5 +1,5 @@
 import { z } from "zod";
-declare const CondorRecSchema: z.ZodObject<{
+export declare const CondorRecSchema: z.ZodObject<{
     id: z.ZodString;
     tm: z.ZodNumber;
 }, "strip", z.ZodAny, z.objectOutputType<{
@@ -10,7 +10,7 @@ declare const CondorRecSchema: z.ZodObject<{
     tm: z.ZodNumber;
 }, z.ZodAny, "strip">>;
 export type CondorRec = z.infer<typeof CondorRecSchema>;
-declare const CondorErrSchema: z.ZodObject<{
+export declare const CondorErrSchema: z.ZodObject<{
     message: z.ZodString;
     code: z.ZodOptional<z.ZodString>;
     record: z.ZodOptional<z.ZodAny>;
@@ -33,4 +33,3 @@ export declare function create(initialRecords: CondorRec[], dbfile: string, onEr
 export declare function load(dbfile: string, onErrors: CondorErrHandler): Promise<CondorRec[] | null>;
 export declare function load_(dbfile: string, onErrors: CondorErrHandler): Promise<Map<string, CondorRec> | null>;
 export declare function save(recordArray: CondorRec[], dbfile: string, onErrors: CondorErrHandler): Promise<CondorRec[] | null>;
-export {};

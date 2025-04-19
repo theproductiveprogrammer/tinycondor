@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CondorErrSchema = exports.CondorRecSchema = void 0;
 exports.clearCache = clearCache;
 exports.create = create;
 exports.load = load;
@@ -10,13 +11,13 @@ const node_fs_1 = require("node:fs");
 const promises_1 = require("node:fs/promises");
 const node_readline_1 = require("node:readline");
 const CACHE = new Map();
-const CondorRecSchema = zod_1.z
+exports.CondorRecSchema = zod_1.z
     .object({
     id: zod_1.z.string(),
     tm: zod_1.z.number(),
 })
     .catchall(zod_1.z.any());
-const CondorErrSchema = zod_1.z.object({
+exports.CondorErrSchema = zod_1.z.object({
     message: zod_1.z.string(),
     code: zod_1.z.string().optional(),
     record: zod_1.z.any().optional(),
@@ -142,7 +143,7 @@ async function load_(dbfile, onErrors) {
             rl.on("line", (line) => {
                 ctx.linenum++;
                 try {
-                    const rec = CondorRecSchema.parse(JSON.parse(line));
+                    const rec = exports.CondorRecSchema.parse(JSON.parse(line));
                     const current = ctx.recs.get(rec.id);
                     if (!current || current.tm < rec.tm) {
                         ctx.recs.set(rec.id, rec);

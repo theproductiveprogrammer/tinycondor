@@ -5,7 +5,7 @@ import { createInterface } from "node:readline";
 
 const CACHE: Map<string, Map<string, CondorRec>> = new Map();
 
-const CondorRecSchema = z
+export const CondorRecSchema = z
 	.object({
 		id: z.string(),
 		tm: z.number(),
@@ -13,7 +13,7 @@ const CondorRecSchema = z
 	.catchall(z.any());
 export type CondorRec = z.infer<typeof CondorRecSchema>;
 
-const CondorErrSchema = z.object({
+export const CondorErrSchema = z.object({
 	message: z.string(),
 	code: z.string().optional(),
 	record: z.any().optional(),
