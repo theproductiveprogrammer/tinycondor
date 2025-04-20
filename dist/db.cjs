@@ -1,25 +1,55 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
 // src/db.ts
-import { z } from "zod";
-import { open, close, write, createReadStream } from "node:fs";
-import { appendFile } from "node:fs/promises";
-import { createInterface } from "node:readline";
+var db_exports = {};
+__export(db_exports, {
+  CondorErrSchema: () => CondorErrSchema,
+  CondorRecSchema: () => CondorRecSchema,
+  clearCache: () => clearCache,
+  create: () => create,
+  load: () => load,
+  load_: () => load_,
+  save: () => save
+});
+module.exports = __toCommonJS(db_exports);
+var import_zod = require("zod");
+var import_node_fs = require("fs");
+var import_promises = require("fs/promises");
+var import_node_readline = require("readline");
 var CACHE = /* @__PURE__ */ new Map();
-var CondorRecSchema = z.object({
-  id: z.string(),
-  tm: z.number()
-}).catchall(z.any());
-var CondorErrSchema = z.object({
-  message: z.string(),
-  code: z.string().optional(),
-  record: z.any().optional(),
-  err: z.any().optional()
+var CondorRecSchema = import_zod.z.object({
+  id: import_zod.z.string(),
+  tm: import_zod.z.number()
+}).catchall(import_zod.z.any());
+var CondorErrSchema = import_zod.z.object({
+  message: import_zod.z.string(),
+  code: import_zod.z.string().optional(),
+  record: import_zod.z.any().optional(),
+  err: import_zod.z.any().optional()
 });
 function clearCache() {
   CACHE.clear();
 }
 async function create(initialRecords, dbfile, onErrors) {
   return new Promise((resolve) => {
-    open(dbfile, "wx", (err, fd) => {
+    (0, import_node_fs.open)(dbfile, "wx", (err, fd) => {
       if (err) {
         if (err.code === "EEXIST") {
           onErrors({
@@ -40,8 +70,8 @@ async function create(initialRecords, dbfile, onErrors) {
         });
         return resolve(null);
       }
-      write(fd, data.str, null, "utf8", (err2) => {
-        close(fd);
+      (0, import_node_fs.write)(fd, data.str, null, "utf8", (err2) => {
+        (0, import_node_fs.close)(fd);
         if (err2) {
           onErrors({
             message: `failed to write initial records to file: ${dbfile}`,
@@ -117,7 +147,7 @@ async function load_(dbfile, onErrors) {
         linenum: 0,
         recs: /* @__PURE__ */ new Map()
       };
-      const rl = createInterface(createReadStream(dbfile));
+      const rl = (0, import_node_readline.createInterface)((0, import_node_fs.createReadStream)(dbfile));
       rl.on("line", (line) => {
         ctx.linenum++;
         try {
@@ -174,13 +204,14 @@ async function save(recordArray, dbfile, onErrors) {
     });
     return unwrap(current);
   }
-  await appendFile(dbfile, data.str);
+  await (0, import_promises.appendFile)(dbfile, data.str);
   return unwrap(current);
 }
 function unwrap(recs) {
   return Array.from(recs.values());
 }
-export {
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
   CondorErrSchema,
   CondorRecSchema,
   clearCache,
@@ -188,4 +219,4 @@ export {
   load,
   load_,
   save
-};
+});

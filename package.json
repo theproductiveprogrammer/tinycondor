@@ -3,21 +3,24 @@
 	"version": "1.0.4",
 	"description": "a tiny but useful record based db",
 	"type": "module",
-	"main": "dist/db.js",
-	"types": "dist/db.d.ts",
+	"main": "./dist/db.cjs",
+	"module": "./dist/db.js",
+	"types": "./dist/db.d.ts",
+	"exports": {
+		".": {
+			"require": "./dist/db.cjs",
+			"import": "./dist/db.js"
+		}
+	},
 	"scripts": {
-		"build": "tsc",
+		"build": "tsup src/db.ts --dts --format esm,cjs",
 		"test": "vitest"
 	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/theproductiveprogrammer/tinycondor.git"
 	},
-	"keywords": [
-		"database",
-		"json",
-		"embedded"
-	],
+	"keywords": ["database", "json", "embedded"],
 	"author": "charles.lobo@gmail.com",
 	"license": "ISC",
 	"bugs": {
@@ -31,6 +34,7 @@
 		"@types/mock-fs": "^4.13.4",
 		"@types/node": "^22.14.1",
 		"mock-fs": "^5.5.0",
+		"tsup": "^8.4.0",
 		"typescript": "^5.8.3",
 		"vitest": "^3.1.1"
 	}
