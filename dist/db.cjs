@@ -204,11 +204,32 @@ async function save(recordArray, dbfile, onErrors) {
     });
     return unwrap(current);
   }
-  await (0, import_promises.appendFile)(dbfile, data.str);
+  const needsNewline = await fileEndsWithNewline(dbfile, onErrors);
+  const toAppend = (needsNewline ? "" : "\n") + data.str + "\n";
+  await (0, import_promises.appendFile)(dbfile, toAppend);
   return unwrap(current);
 }
 function unwrap(recs) {
   return Array.from(recs.values());
+}
+async function fileEndsWithNewline(path, onErrors) {
+  try {
+    const fh = await (0, import_promises.open)(path, "r");
+    const stat = await fh.stat();
+    if (stat.size === 0) {
+      await fh.close();
+      return true;
+    }
+    const buf = Buffer.alloc(1);
+    await fh.read(buf, 0, 1, stat.size - 1);
+    await fh.close();
+    return buf.toString() === "\n";
+  } catch (err) {
+    onErrors({
+      message: `Failed checking fileEndsWithNewline` + err.message
+    });
+    return true;
+  }
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
