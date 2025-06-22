@@ -95,13 +95,11 @@ function updatedRecs(
 		}
 		if (!record.tm) record.tm = Date.now();
 		const current = cached.get(record.id);
-		if (!current || (current.tm !== record.tm && notEq(current, record))) {
+		if (!current || current.tm !== record.tm || notEq(current, record)) {
 			try {
 				updatedStr.push(JSON.stringify(record));
 				updatedRecs.push(record);
-				if (!current || current.tm < record.tm) {
-					cached.set(record.id, record);
-				}
+				cached.set(record.id, record);
 			} catch (err) {
 				onErrors({ message: `failed to convert record: ${record.id} to JSON` });
 			}
