@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { open, close, write, createReadStream } from "node:fs";
-import { appendFile } from "node:fs/promises";
+import { appendFile, open as openAsync } from "node:fs/promises";
 import { createInterface } from "node:readline";
 
 const CACHE: Map<string, Map<string, CondorRec>> = new Map();
@@ -224,10 +224,35 @@ export async function save(
 		});
 		return unwrap(current);
 	}
-	await appendFile(dbfile, data.str);
+	const needsNewline = await fileEndsWithNewline(dbfile, onErrors);
+	const toAppend = (needsNewline ? "" : "\n") + data.str + "\n";
+	await appendFile(dbfile, toAppend);
 	return unwrap(current);
 }
 
 function unwrap(recs: Map<string, CondorRec>): CondorRec[] {
 	return Array.from(recs.values());
+}
+
+async function fileEndsWithNewline(
+	path: string,
+	onErrors: CondorErrHandler
+): Promise<boolean> {
+	try {
+		const fh = await openAsync(path, "r");
+		const stat = await fh.stat();
+		if (stat.size === 0) {
+			await fh.close();
+			return true;
+		}
+		const buf = Buffer.alloc(1);
+		await fh.read(buf, 0, 1, stat.size - 1);
+		await fh.close();
+		return buf.toString() === "\n";
+	} catch (err: any) {
+		onErrors({
+			message: `Failed checking fileEndsWithNewline` + err.message,
+		});
+		return true;
+	}
 }
