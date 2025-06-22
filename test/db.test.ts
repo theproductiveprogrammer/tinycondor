@@ -22,6 +22,20 @@ const result2 = [
 	{ id: "2", tm: 400, val: 2 },
 	{ id: "3", tm: 400, val: 3 },
 ];
+const updatedRecords3 = [{ id: "3", tm: 400, val: 3, lies: false }];
+const result3 = [
+	{ id: "1", tm: 300, val: 2 },
+	{ id: "2", tm: 400, val: 2 },
+	{ id: "3", tm: 400, val: 3, lies: false },
+];
+const updatedRecords4 = [
+	{ id: "1", tm: 100, val: 2 },
+	{ id: "2", tm: 200, val: 3 },
+];
+const result4 = [
+	{ id: "1", tm: 100, val: 2 },
+	{ id: "2", tm: 200, val: 3 },
+];
 
 describe("Tiny Condor", () => {
 	let onErrors: ReturnType<typeof vi.fn>;
@@ -111,6 +125,22 @@ describe("Tiny Condor", () => {
 				record: invalidRecord[0],
 			})
 		);
+	});
+
+	it("saves boolean records", async () => {
+		await create(testRecords, dbFile, onErrors);
+		await save(updatedRecords, dbFile, onErrors);
+		await save(updatedRecords2, dbFile, onErrors);
+		const result = await save(updatedRecords3, dbFile, onErrors);
+		expect(result).toEqual(result3);
+		expect(onErrors).not.toHaveBeenCalled();
+	});
+
+	it("saves updated records with same timestamp", async () => {
+		await create(testRecords, dbFile, onErrors);
+		const result = await save(updatedRecords4, dbFile, onErrors);
+		expect(result).toEqual(result4);
+		expect(onErrors).not.toHaveBeenCalled();
 	});
 
 	it("use cached records", async () => {
