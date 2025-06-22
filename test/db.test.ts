@@ -53,6 +53,7 @@ describe("Tiny Condor", () => {
 
 	it("loads an existing DB file", async () => {
 		await create(testRecords, dbFile, onErrors);
+		clearCache();
 		const result = await load(dbFile, onErrors);
 		expect(result).toEqual(testRecords);
 		expect(onErrors).not.toHaveBeenCalled();
@@ -70,6 +71,34 @@ describe("Tiny Condor", () => {
 		await create(testRecords, dbFile, onErrors);
 		const result = await save(updatedRecords, dbFile, onErrors);
 		expect(result).toEqual(updatedRecords);
+		expect(onErrors).not.toHaveBeenCalled();
+	});
+
+	it("saves records multiple times to an existing DB file", async () => {
+		await create(testRecords, dbFile, onErrors);
+		await save(updatedRecords, dbFile, onErrors);
+		const result = await save(updatedRecords2, dbFile, onErrors);
+		expect(result).toEqual(result2);
+		expect(onErrors).not.toHaveBeenCalled();
+	});
+
+	it("saves records multiple times to an existing DB file without cache", async () => {
+		await create(testRecords, dbFile, onErrors);
+		await save(updatedRecords, dbFile, onErrors);
+		clearCache();
+		const result = await save(updatedRecords2, dbFile, onErrors);
+		expect(result).toEqual(result2);
+		expect(onErrors).not.toHaveBeenCalled();
+	});
+
+	it("saves records to an existing DB file and reloads them properly", async () => {
+		await create(testRecords, dbFile, onErrors);
+		await save(updatedRecords, dbFile, onErrors);
+		clearCache();
+		await load(dbFile, onErrors);
+		const result = await save(updatedRecords2, dbFile, onErrors);
+		expect(onErrors).not.toHaveBeenCalled();
+		expect(result).toEqual(result2);
 	});
 
 	it("returns null and calls onErrors if save fails (e.g., bad record)", async () => {
