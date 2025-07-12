@@ -95,7 +95,11 @@ function updatedRecs(
 		}
 		if (!record.tm) record.tm = Date.now();
 		const current = cached.get(record.id);
-		if (!current || current.tm !== record.tm || notEq(current, record)) {
+		if (
+			!current ||
+			current.tm < record.tm ||
+			(current.tm === record.tm && notEq(current, record))
+		) {
 			try {
 				updatedStr.push(JSON.stringify(record));
 				updatedRecs.push(record);
@@ -166,7 +170,11 @@ export async function load_(
 				try {
 					const rec = CondorRecSchema.parse(JSON.parse(line));
 					const current = ctx.recs.get(rec.id);
-					if (!current || current.tm < rec.tm) {
+					if (
+						!current ||
+						current.tm < rec.tm ||
+						(current.tm === rec.tm && notEq(current, rec))
+					) {
 						ctx.recs.set(rec.id, rec);
 					}
 				} catch (err) {
