@@ -36,6 +36,14 @@ const result4 = [
 	{ id: "1", tm: 100, val: 2 },
 	{ id: "2", tm: 200, val: 3 },
 ];
+const updatedRecords5 = [
+	{ id: "1", tm: 100, val: 2 },
+	{ id: "2", tm: 50, val: 2 },
+];
+const result5 = [
+	{ id: "1", tm: 100, val: 2 },
+	{ id: "2", tm: 200, val: 1 },
+];
 
 describe("Tiny Condor", () => {
 	let onErrors: ReturnType<typeof vi.fn>;
@@ -140,6 +148,13 @@ describe("Tiny Condor", () => {
 		await create(testRecords, dbFile, onErrors);
 		const result = await save(updatedRecords4, dbFile, onErrors);
 		expect(result).toEqual(result4);
+		expect(onErrors).not.toHaveBeenCalled();
+	});
+
+	it("saves does not update records with older timestamp", async () => {
+		await create(testRecords, dbFile, onErrors);
+		const result = await save(updatedRecords5, dbFile, onErrors);
+		expect(result).toEqual(result5);
 		expect(onErrors).not.toHaveBeenCalled();
 	});
 
