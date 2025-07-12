@@ -97,7 +97,7 @@ function updatedRecs(cached, recs, onErrors) {
     }
     if (!record.tm) record.tm = Date.now();
     const current = cached.get(record.id);
-    if (!current || current.tm !== record.tm || notEq(current, record)) {
+    if (!current || current.tm < record.tm || current.tm === record.tm && notEq(current, record)) {
       try {
         updatedStr.push(JSON.stringify(record));
         updatedRecs2.push(record);
@@ -151,7 +151,7 @@ async function load_(dbfile, onErrors) {
         try {
           const rec = CondorRecSchema.parse(JSON.parse(line));
           const current = ctx.recs.get(rec.id);
-          if (!current || current.tm < rec.tm) {
+          if (!current || current.tm < rec.tm || current.tm === rec.tm && notEq(current, rec)) {
             ctx.recs.set(rec.id, rec);
           }
         } catch (err) {
