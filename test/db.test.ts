@@ -44,6 +44,44 @@ const result5 = [
 	{ id: "1", tm: 100, val: 2 },
 	{ id: "2", tm: 200, val: 1 },
 ];
+const testRecords2 = [
+	{
+		id: "lognfo:o2b59c9kxYoU",
+		tm: 1752319560685,
+		position: { y: 753.8713974720046, x: 263.87139747200456 },
+	},
+	{ id: "lognfo:o2b59c9kxYoU", tm: 1752319560685 },
+	{
+		id: "lognfo:o2b59c9kxYoU",
+		tm: 1752319560685,
+		position: { y: 631.9334063343542, x: 104.7831854212467 },
+	},
+	{ id: "lognfo:o2b59c9kxYoU", tm: 1752319560685 },
+	{
+		id: "lognfo:o2b59c9kxYoU",
+		tm: 1752319560685,
+		position: { y: 714.7031775224002, x: 66.19802288322497 },
+	},
+	{ id: "lognfo:o2b59c9kxYoU", tm: 1752319560685 },
+	{
+		id: "lognfo:o2b59c9kxYoU",
+		tm: 1752319560685,
+		position: { y: 379.2948502177296, x: 95.15466096389932 },
+	},
+	{ id: "lognfo:o2b59c9kxYoU", tm: 1752319560685 },
+	{
+		id: "lognfo:o2b59c9kxYoU",
+		tm: 1752319560685,
+		position: { y: 386.4375596356945, x: 81.58351474326221 },
+	},
+];
+const result6 = [
+	{
+		id: "lognfo:o2b59c9kxYoU",
+		tm: 1752319560685,
+		position: { y: 386.4375596356945, x: 81.58351474326221 },
+	},
+];
 
 describe("Tiny Condor", () => {
 	let onErrors: ReturnType<typeof vi.fn>;
@@ -151,10 +189,18 @@ describe("Tiny Condor", () => {
 		expect(onErrors).not.toHaveBeenCalled();
 	});
 
-	it("saves does not update records with older timestamp", async () => {
+	it("does not update records with older timestamp", async () => {
 		await create(testRecords, dbFile, onErrors);
 		const result = await save(updatedRecords5, dbFile, onErrors);
 		expect(result).toEqual(result5);
+		expect(onErrors).not.toHaveBeenCalled();
+	});
+
+	it("updates records with same timestamp", async () => {
+		await create(testRecords2, dbFile, onErrors);
+		clearCache();
+		const result = await load(dbFile, onErrors);
+		expect(result).toEqual(result6);
 		expect(onErrors).not.toHaveBeenCalled();
 	});
 
