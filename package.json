@@ -3,17 +3,17 @@
 	"version": "1.3.1",
 	"description": "a tiny but useful record based db",
 	"type": "module",
-	"main": "./dist/db.cjs",
-	"module": "./dist/db.js",
-	"types": "./dist/db.d.ts",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
-			"require": "./dist/db.cjs",
-			"import": "./dist/db.js"
+			"require": "./dist/index.cjs",
+			"import": "./dist/index.js"
 		}
 	},
 	"scripts": {
-		"build": "tsup src/db.ts --dts --format esm,cjs",
+		"build": "tsup src/index.ts --dts --format esm,cjs",
 		"test": "vitest"
 	},
 	"repository": {

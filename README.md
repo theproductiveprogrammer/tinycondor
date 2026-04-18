@@ -9,6 +9,7 @@ Ever wanted a quick and easy way to store data in your app directly as JSON reco
 ## ✨ Features
 
 - **🚀 Simple API** - Just 3 core functions: `create()`, `load()`, `save()`
+- **📎 Blob Store** - Attach large/binary payloads with `putBlob()` / `getBlob()` — content-addressed, deduplicated, immutable
 - **🔒 Production-Safe** - File locking, atomic writes, and crash protection
 - **⚡ Optimized** - Fast deep equality, in-memory caching, and smart validation
 - **📊 Observable** - Built-in metrics tracking for performance monitoring
@@ -83,6 +84,33 @@ const onErrorsHandler = ({ message, code, record }) => {
 ```
 
 ## 🔧 Advanced Features
+
+### Blob Store (Large / Binary References)
+
+Keep records small. When you want to attach images, uploads, snapshots, or any payload that would bloat the append-only log, store the bytes in the blob store and reference them by SHA-256 hash from your record.
+
+```js
+import { putBlob, getBlob, hasBlob, save, load } from 'tinycondor';
+
+// Store bytes — same content always produces the same hash (dedup)
+const avatarBytes = await fs.readFile('./avatar.png');
+const hash = await putBlob(avatarBytes, './blobs', onErrors);
+
+// Reference the hash from any record field you like
+await save([{ id: 'u1', tm: Date.now(), avatar: hash }], './users.json', onErrors);
+
+// Later — fetch the bytes back
+const users = await load('./users.json', onErrors);
+const rec = users.find(u => u.id === 'u1');
+const bytes = await getBlob(rec.avatar, './blobs', onErrors);
+
+// Cheap existence probe
+const present = await hasBlob(hash, './blobs');
+```
+
+**How it works.** Blobs are hashed with SHA-256 and written to `{storeDir}/ab/cdef0123...` using a git-style 2-char fanout directory. Writes are atomic (temp file + rename) and idempotent — storing the same bytes twice is a no-op. Hashes are validated before any filesystem access to block path traversal.
+
+**Scope.** `putBlob` accepts `string | Buffer` (strings encoded as utf8); `getBlob` returns a `Buffer`. Intended for payloads up to a few hundred MB. There is no built-in garbage collection — when you overwrite a record with a new blob hash, the old blob remains on disk. Write a sweep yourself when needed.
 
 ### File Size Protection
 
@@ -192,6 +220,19 @@ Save/update records to database.
 Clear in-memory cache for specific file or all files.
 - Returns: `void`
 
+### `putBlob(data, storeDir, onErrors)`
+Hash `data` (string or Buffer) with SHA-256 and store under `storeDir` using a `ab/cdef...` fanout layout. Idempotent — duplicates are skipped.
+- Returns: `Promise<string | null>` — 64-char hex hash on success
+
+### `getBlob(hash, storeDir, onErrors)`
+Fetch blob bytes for a previously-stored hash.
+- Returns: `Promise<Buffer | null>`
+- Rejects malformed hashes (anything other than 64 lowercase hex chars) before touching the filesystem
+
+### `hasBlob(hash, storeDir)`
+Probe whether a blob is present.
+- Returns: `Promise<boolean>` — `false` on any error, including invalid hash
+
 ### `getMetrics(dbfile?)`
 Get performance metrics for specific file or all files.
 - Returns: `FileMetrics | Map<string, FileMetrics> | undefined`
@@ -275,6 +316,7 @@ To minimize the risk of data loss:
 - **Single-writer recommended** for best reliability (multiple writers supported via locking but may have edge cases)
 - **No built-in encryption** - Implement at the application level if needed
 - **No schema validation** beyond `id` and `tm` fields - Use Zod or similar for application-level validation
+- **No blob garbage collection** - Orphaned blobs accumulate when records are updated to point at new hashes. Run a manual sweep if this matters for your workload.
 
 ## 📄 License
 
