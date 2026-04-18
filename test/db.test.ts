@@ -210,4 +210,50 @@ describe("Tiny Condor", () => {
 		const result = await save(updatedRecords2 as any, dbFile, onErrors);
 		expect(result).toEqual(result2);
 	});
+
+	it("does not advance cache if save write fails", async () => {
+		await create(testRecords, dbFile, onErrors);
+		// Force the append to fail by replacing the file with a directory.
+		// load_() still hits cache, but the fh.write() in save() will throw.
+		await fs.unlink(dbFile);
+		await fs.mkdir(dbFile);
+		onErrors.mockClear();
+
+		const attempted = await save(updatedRecords, dbFile, onErrors);
+		expect(attempted).toBeNull();
+		expect(onErrors).toHaveBeenCalled();
+
+		// Cache must still reflect the pre-save state (load hits cache first).
+		const cached = await load(dbFile, onErrors);
+		expect(cached).toEqual(testRecords);
+	});
+
+	it("clearCache(dbfile) clears only that file's cache", async () => {
+		const dbFileA = "testdbA.json";
+		const dbFileB = "testdbB.json";
+		const recsB = [{ id: "x", tm: 100, val: "b" }];
+		await create(testRecords, dbFileA, onErrors);
+		await create(recsB, dbFileB, onErrors);
+
+		// Append records directly on disk, bypassing the cache.
+		await fs.appendFile(
+			dbFileA,
+			JSON.stringify({ id: "ext", tm: 999, val: "new" }) + "\n"
+		);
+		await fs.appendFile(
+			dbFileB,
+			JSON.stringify({ id: "extB", tm: 999, val: "new" }) + "\n"
+		);
+
+		clearCache(dbFileA);
+
+		// A was cleared: load re-reads disk and sees the external record.
+		const resultA = await load(dbFileA, onErrors);
+		expect(resultA).toContainEqual(
+			expect.objectContaining({ id: "ext" })
+		);
+		// B was untouched: load still returns cached state (no "extB").
+		const resultB = await load(dbFileB, onErrors);
+		expect(resultB).toEqual(recsB);
+	});
 });

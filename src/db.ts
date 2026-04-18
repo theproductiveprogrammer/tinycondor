@@ -83,8 +83,17 @@ export type CondorErr = z.infer<typeof CondorErrSchema>;
 
 export type CondorErrHandler = (err: CondorErr) => void;
 
-export function clearCache() {
-	CACHE.clear();
+// The problem is callers need to free memory, either for one file
+// or across the whole process.
+// The way we solve this is by deleting just the entry for `dbfile`
+// when given, otherwise clearing the whole cache.
+// flow: user code -> clearCache() <-- HERE
+export function clearCache(dbfile?: string) {
+	if (dbfile) {
+		CACHE.delete(dbfile);
+	} else {
+		CACHE.clear();
+	}
 }
 
 /*		way/
@@ -221,7 +230,6 @@ export async function create(
 			}
 
 			const cached = new Map<string, CondorRec>();
-			CACHE.set(dbfile, cached);
 			const data = updatedRecs(cached, initialRecords, onErrors);
 
 			if (data.recs.length === 0) {
@@ -236,6 +244,10 @@ export async function create(
 
 			// Atomic rename (replaces file if exists)
 			await rename(tempFile, dbfile);
+
+			// Understand: publish to CACHE only after rename succeeds, so a
+			// failed write cannot leave the cache ahead of disk.
+			CACHE.set(dbfile, cached);
 
 			return data.recs;
 		} catch (err) {
@@ -457,7 +469,16 @@ export async function save(
 			});
 			return null;
 		}
-		const data = updatedRecs(current, recordArray, onErrors);
+		// The problem is updatedRecs() mutates the map it is given, so
+		// passing the cached map directly meant the cache advanced before
+		// the disk write — a failed append would leave cache ahead of disk.
+		// The way we solve this is by staging updates in a copy, writing
+		// to disk first, then swapping the copy into CACHE on success.
+		// Understand: this assumes withLock serializes concurrent saves;
+		// on the lock-bypass path two parallel saves could still leave
+		// the cache stale relative to disk until clearCache()+load().
+		const working = new Map(current);
+		const data = updatedRecs(working, recordArray, onErrors);
 		if (data.recs.length == 0) {
 			onErrors({
 				message: `nothing new to save in: ${dbfile}`,
@@ -492,6 +513,9 @@ export async function save(
 			await fh.sync(); // Force data to disk before closing
 			await fh.close();
 
+			// Commit the staged updates to CACHE now that disk write succeeded.
+			CACHE.set(dbfile, working);
+
 			// Update metrics
 			metrics.saveCount++;
 			metrics.recordsSaved += data.recs.length;
@@ -500,7 +524,7 @@ export async function save(
 			metrics.avgSaveTimeMs = metrics.totalSaveTimeMs / metrics.saveCount;
 			metrics.lastOperationTime = Date.now();
 
-			return unwrap(current);
+			return unwrap(working);
 		} catch (err) {
 			onErrors(enhanceError(err, "save/write", dbfile));
 			return null;
