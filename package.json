@@ -1,6 +1,6 @@
 {
 	"name": "tinycondor",
-	"version": "1.5.0",
+	"version": "1.5.1",
 	"description": "a tiny but useful record based db",
 	"type": "module",
 	"main": "./dist/index.cjs",
