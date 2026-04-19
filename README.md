@@ -10,6 +10,8 @@ Ever wanted a quick and easy way to store data in your app directly as JSON reco
 
 - **🚀 Simple API** - Just 3 core functions: `create()`, `load()`, `save()`
 - **📎 Blob Store** - Attach large/binary payloads with `putBlob()` / `getBlob()` — content-addressed, deduplicated, immutable
+- **📝 Doc Store** - Store evolving markdown/text (agent memory, chats, notes) with `putDoc()` / `appendDoc()` / `getDoc()` — id-addressed, mutable, human-navigable
+- **🔍 Agent-Memory Helpers** - `grepDocs()` for pattern recall, `renderIndex()` / `writeIndex()` for scannable directory views, `getDocLines()` for token-budgeted reads, frontmatter support
 - **🔒 Production-Safe** - File locking, atomic writes, and crash protection
 - **⚡ Optimized** - Fast deep equality, in-memory caching, and smart validation
 - **📊 Observable** - Built-in metrics tracking for performance monitoring
@@ -111,6 +113,84 @@ const present = await hasBlob(hash, './blobs');
 **How it works.** Blobs are hashed with SHA-256 and written to `{storeDir}/ab/cdef0123...` using a git-style 2-char fanout directory. Writes are atomic (temp file + rename) and idempotent — storing the same bytes twice is a no-op. Hashes are validated before any filesystem access to block path traversal.
 
 **Scope.** `putBlob` accepts `string | Buffer` (strings encoded as utf8); `getBlob` returns a `Buffer`. Intended for payloads up to a few hundred MB. There is no built-in garbage collection — when you overwrite a record with a new blob hash, the old blob remains on disk. Write a sweep yourself when needed.
+
+### Doc Store (Mutable Text Documents)
+
+When the data is evolving text — LLM chat logs, agent memory files, per-user notes — the blob store is the wrong tool: content-addressed means every edit creates a new file and orphans the old one. The doc store gives you id-addressed, mutable storage with a human-navigable folder layout instead.
+
+```js
+import { putDoc, appendDoc, getDoc, listDocs, deleteDoc } from 'tinycondor';
+
+// Overwrite (atomic temp + rename)
+await putDoc('agents/planner/memory.md', '# Goals\n- ship v2', './docs', onErrors);
+
+// Append turn-by-turn (fsynced before return)
+await appendDoc('chats/session-42.md', '\n**user:** hello\n', './docs', onErrors);
+await appendDoc('chats/session-42.md', '**assistant:** hi!\n', './docs', onErrors);
+
+// Read
+const memory = await getDoc('agents/planner/memory.md', './docs', onErrors);
+
+// Walk a subtree for compaction flows
+const entries = await listDocs('chats', './docs', onErrors);
+// entries => [{ path: 'chats/session-42.md', size: 48, mtime: 1713456789000 }, ...]
+
+// Remove old docs during compaction
+await deleteDoc('chats/session-01.md', './docs', onErrors);
+```
+
+**How it works.** Docs live at `{storeDir}/{relPath}` using the path you choose — `chats/session-42.md`, `agents/planner/memory.md`, whatever makes sense. `putDoc` writes to a temp file and renames, so a crash can never leave a half-written doc. `appendDoc` opens in append mode and fsyncs before close. `listDocs` walks the named subtree recursively and returns every file (not directories) with its size and mtime, so "keep the newest N memories, delete the rest" is a short script. Every function rejects paths with `..`, absolute paths, or null bytes before any fs access.
+
+**Scope.** Text only — `putDoc` and `appendDoc` take `string`, `getDoc` returns `string`. For bytes, use the blob store. There is no locking; if two processes append to the same doc concurrently the writes interleave.
+
+### Agent-Memory Helpers
+
+The doc store exists so you can build an **external memory for chat-only agents**: persistent profile, session transcripts, pattern notes, handoff artifacts. Five helpers make that workflow first-class without pulling in a vector database. ([Letta's 2025 benchmark](https://www.letta.com/blog/benchmarking-ai-agent-memory) showed filesystem + grep beats vector-graph memory on LoCoMo — this is by design, not a shortcut.)
+
+```js
+import {
+  grepDocs, renderIndex, writeIndex, getDocLines, renameDoc
+} from 'tinycondor';
+
+// Pattern recognition — "you mentioned your sister three times this week"
+const hits = await grepDocs('sister', 'players/charles/conversations', './docs', onErrors);
+// => [{ path: 'players/charles/conversations/urim/2026-04-01.md', line: 14, text: '...' }, ...]
+
+// Scan a directory without loading every file
+const index = await renderIndex('players/charles', './docs', onErrors, { recursive: true });
+// Returns a markdown table with path, size, modified date, and summary (from frontmatter).
+
+// Persist the same index as a real file for git/file-only consumers
+await writeIndex('players/charles', './docs', onErrors, { recursive: true });
+// Writes players/charles/INDEX.md.
+
+// Token-budgeted reads — load only the relevant range
+const snippet = await getDocLines(
+  'players/charles/conversations/urim/2026-04-05.md',
+  40, 60, './docs', onErrors
+);
+
+// Archiving during compaction — atomic move, auto-creates dest dirs
+await renameDoc(
+  'players/charles/conversations/urim/2026-04-01.md',
+  'players/charles/archive/2026-04/2026-04-01.md',
+  './docs', onErrors
+);
+```
+
+**Frontmatter.** Any doc can start with a YAML-ish block. `renderIndex` reads `summary:` into the Summary column; `tags:` is available via `parseFrontmatter`.
+
+```markdown
+---
+summary: Excavated the drift pattern around career
+tags: [career, drift, urim]
+---
+# Body...
+```
+
+**grepDocs options.** Pass `{ regex: true }` for regex patterns, `{ caseInsensitive: true }`, or `{ maxResults: N }` to cap the scan. Matches come back sorted by path then line for stable agent output.
+
+**Why agent-maintained indexes, not auto-on-write.** `writeIndex` is opt-in on purpose: every write cascading into parent-dir updates would multiply I/O and widen the race window on batched operations. Call `writeIndex` when you want a persisted snapshot — e.g. at the end of an agent turn, or during compaction.
 
 ### File Size Protection
 
@@ -233,6 +313,53 @@ Fetch blob bytes for a previously-stored hash.
 Probe whether a blob is present.
 - Returns: `Promise<boolean>` — `false` on any error, including invalid hash
 
+### `putDoc(relPath, content, storeDir, onErrors)`
+Atomically write `content` (utf8 string) to `{storeDir}/{relPath}`. Auto-creates parent directories.
+- Returns: `Promise<boolean>` — `true` on success
+
+### `appendDoc(relPath, content, storeDir, onErrors)`
+Append `content` (utf8 string) to `{storeDir}/{relPath}`, fsyncing before return. Creates the file if missing.
+- Returns: `Promise<boolean>` — `true` on success
+
+### `getDoc(relPath, storeDir, onErrors)`
+Read a doc as a utf8 string.
+- Returns: `Promise<string | null>`
+
+### `hasDoc(relPath, storeDir)`
+Probe whether a doc is present (directories return `false`).
+- Returns: `Promise<boolean>` — `false` on any error, including invalid path
+
+### `listDocs(relDir, storeDir, onErrors)`
+Recursively list every file under `{storeDir}/{relDir}`. Pass `""` to walk the whole store. Missing `relDir` returns `[]` silently.
+- Returns: `Promise<DocEntry[] | null>` where `DocEntry` is `{ path: string; size: number; mtime: number }`
+
+### `deleteDoc(relPath, storeDir, onErrors)`
+Remove a single doc.
+- Returns: `Promise<boolean>` — `true` on success
+
+### `renameDoc(fromPath, toPath, storeDir, onErrors)`
+Atomically move a doc. Auto-creates the destination's parent directories. Cross-filesystem moves surface as `EXDEV`.
+- Returns: `Promise<boolean>` — `true` on success
+
+### `getDocLines(relPath, from, to, storeDir, onErrors)`
+Read a 1-indexed inclusive line range. Out-of-range `from`/`to` clamp silently so callers can pass generous bounds.
+- Returns: `Promise<string | null>`
+
+### `grepDocs(pattern, relDir, storeDir, onErrors, opts?)`
+Scan every doc under `relDir` for a pattern. Options: `{ regex?, caseInsensitive?, maxResults? }`. Matches come back sorted by path then line.
+- Returns: `Promise<DocMatch[] | null>` where `DocMatch` is `{ path: string; line: number; text: string }`
+
+### `renderIndex(relDir, storeDir, onErrors, opts?)`
+Return a markdown table (path, size, modified, summary-from-frontmatter) describing the directory's contents. Pass `{ recursive: true }` to include descendants. Skips `INDEX.md` files automatically.
+- Returns: `Promise<string | null>`
+
+### `writeIndex(relDir, storeDir, onErrors, opts?)`
+Generate the same markdown as `renderIndex` and persist it to `{relDir}/INDEX.md`. Overwrites any existing index atomically.
+- Returns: `Promise<boolean>`
+
+### `parseFrontmatter(content)`
+Parse a YAML-ish frontmatter block from the top of a string. Supports scalar values (`key: value`) and inline arrays (`key: [a, b, c]`). Returns `{ meta, body }` where `meta` is `{ [key: string]: string | string[] }`.
+
 ### `getMetrics(dbfile?)`
 Get performance metrics for specific file or all files.
 - Returns: `FileMetrics | Map<string, FileMetrics> | undefined`
@@ -317,6 +444,7 @@ To minimize the risk of data loss:
 - **No built-in encryption** - Implement at the application level if needed
 - **No schema validation** beyond `id` and `tm` fields - Use Zod or similar for application-level validation
 - **No blob garbage collection** - Orphaned blobs accumulate when records are updated to point at new hashes. Run a manual sweep if this matters for your workload.
+- **No doc locking** - Concurrent `appendDoc` calls to the same path from separate processes will interleave. Serialize at the application layer if that matters.
 
 ## 📄 License
 
