@@ -60,4 +60,41 @@ declare function putBlob(data: string | Buffer, storeDir: string, onErrors: Cond
 declare function getBlob(hash: string, storeDir: string, onErrors: CondorErrHandler): Promise<Buffer | null>;
 declare function hasBlob(hash: string, storeDir: string): Promise<boolean>;
 
-export { type CondorErr, type CondorErrHandler, CondorErrSchema, type CondorRec, CondorRecSchema, clearCache, create, dumpMetrics, getBlob, getMetrics, hasBlob, load, load_, putBlob, save };
+interface DocEntry {
+    path: string;
+    size: number;
+    mtime: number;
+}
+declare function putDoc(relPath: string, content: string, storeDir: string, onErrors: CondorErrHandler): Promise<boolean>;
+declare function appendDoc(relPath: string, content: string, storeDir: string, onErrors: CondorErrHandler): Promise<boolean>;
+declare function getDoc(relPath: string, storeDir: string, onErrors: CondorErrHandler): Promise<string | null>;
+declare function hasDoc(relPath: string, storeDir: string): Promise<boolean>;
+declare function listDocs(relDir: string, storeDir: string, onErrors: CondorErrHandler): Promise<DocEntry[] | null>;
+declare function deleteDoc(relPath: string, storeDir: string, onErrors: CondorErrHandler): Promise<boolean>;
+declare function renameDoc(fromPath: string, toPath: string, storeDir: string, onErrors: CondorErrHandler): Promise<boolean>;
+declare function getDocLines(relPath: string, from: number, to: number, storeDir: string, onErrors: CondorErrHandler): Promise<string | null>;
+interface Frontmatter {
+    [key: string]: string | string[];
+}
+declare function parseFrontmatter(content: string): {
+    meta: Frontmatter;
+    body: string;
+};
+interface DocMatch {
+    path: string;
+    line: number;
+    text: string;
+}
+interface GrepOpts {
+    regex?: boolean;
+    caseInsensitive?: boolean;
+    maxResults?: number;
+}
+declare function grepDocs(pattern: string, relDir: string, storeDir: string, onErrors: CondorErrHandler, opts?: GrepOpts): Promise<DocMatch[] | null>;
+interface IndexOpts {
+    recursive?: boolean;
+}
+declare function renderIndex(relDir: string, storeDir: string, onErrors: CondorErrHandler, opts?: IndexOpts): Promise<string | null>;
+declare function writeIndex(relDir: string, storeDir: string, onErrors: CondorErrHandler, opts?: IndexOpts): Promise<boolean>;
+
+export { type CondorErr, type CondorErrHandler, CondorErrSchema, type CondorRec, CondorRecSchema, type DocEntry, type DocMatch, type Frontmatter, type GrepOpts, type IndexOpts, appendDoc, clearCache, create, deleteDoc, dumpMetrics, getBlob, getDoc, getDocLines, getMetrics, grepDocs, hasBlob, hasDoc, listDocs, load, load_, parseFrontmatter, putBlob, putDoc, renameDoc, renderIndex, save, writeIndex };
